@@ -1,0 +1,61 @@
+baseURL = "https://saucewu.github.io/"
+languageCode = "zh"
+DefaultContentLanguage = "zh"
+title = "Website of SauceWu "
+theme = "anatole"
+summarylength = 25
+enableEmoji = true
+
+# Enable Disqus
+#disqusShortname = ""
+
+# Google Analytics（UA 已停服，换 GA4 后填 G-XXXXXXXX）
+# googleAnalytics = "UA-166235531-1"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
+[params]
+title = "Sauce Wu Blog"
+author = "Sauce Wu"
+profilePicture = "images/profile.jpeg"
+description = "Android / Flutter / Web3"
+keywords = "android,flutter,web3,blockchain"
+favicon = "favicons/"
+customCss = ["css/custom.css"]
+
+## Math settings
+[params.math]
+enable = false  # options: true, false. Enable math support globally, default: false. You can always enable math on per page.
+use = "katex"  # options: "katex", "mathjax". default is "katex".
+
+## Social links
+
+[[params.socialIcons]]
+icon = "fa-brands fa-github"
+title = "GitHub"
+url = "https://github.com/SauceWu"
+
+
+[[params.socialIcons]]
+icon = "fa-solid fa-envelope"
+title = "e-mail"
+url = "mailto:sauce.wu@hotmail.com"
+
+## Menu items
+
+[menu]
+
+  [[menu.main]]
+  name = "Home"
+  identifier = "home"
+  weight = 100
+  url = "/"
+
+  [[menu.main]]
+  name = "Posts"
+  weight = 200
+  identifier = "posts"
+  url = "/posts"

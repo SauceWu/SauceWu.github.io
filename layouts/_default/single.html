@@ -1,0 +1,16 @@
+{{ define "main" }}
+<div class="post animated fadeInDown">
+  <div class="post-content">
+    <div class="post-meta">
+      <span class="post-meta-date">{{ .Date.Format "2006-01-02" }}</span>
+      <span class="post-meta-sep">·</span>
+      <span class="post-meta-read">{{ .ReadingTime }} min read</span>
+      {{ with .Page.Params.Tags }}
+      <span class="post-meta-sep">·</span>
+      {{ range . }}<a class="post-meta-tag" href="{{ "/tags/" | absURL }}{{ . | urlize }}">#{{ . }}</a>{{ end }}
+      {{ end }}
+    </div>
+    {{ .Content }}
+  </div>
+</div>
+{{ end }}

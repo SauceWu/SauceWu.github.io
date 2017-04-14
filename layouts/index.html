@@ -1,0 +1,35 @@
+{{ define "main" }}
+<div class="home-container">
+  <div class="posts-grid">
+    {{ range first 12 .Site.RegularPages.ByDate.Reverse }}
+      {{ if eq .Type "posts" }}
+      <article class="post-card">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <div class="card-meta-top">
+            <span class="card-date">{{ .Date.Format "2006-01-02" }}</span>
+            <span class="card-read-time">{{ .ReadingTime }} min read</span>
+          </div>
+          <h3 class="card-title">
+            <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+          </h3>
+          <p class="card-summary">{{ .Summary | plainify | truncate 90 }}</p>
+          <div class="card-footer">
+            {{ if .Params.tags }}
+            <div class="card-tags">
+              {{ range first 3 .Params.tags }}
+              <span class="card-tag"><a href="{{ "/tags/" | absURL }}{{ . | urlize }}">#{{ . }}</a></span>
+              {{ end }}
+            </div>
+            {{ else }}
+            <div></div>
+            {{ end }}
+            <a href="{{ .RelPermalink }}" class="card-read-more">阅读 →</a>
+          </div>
+        </div>
+      </article>
+      {{ end }}
+    {{ end }}
+  </div>
+</div>
+{{ end }}

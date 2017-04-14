@@ -1,0 +1,4 @@
+{{- partial "medium-zoom.html" .context -}}
+{{- if (hasPrefix .context.Site.Config.Services.GoogleAnalytics.ID "G-") -}}
+  {{- template "_internal/google_analytics.html" .context -}}
+{{- end -}}
