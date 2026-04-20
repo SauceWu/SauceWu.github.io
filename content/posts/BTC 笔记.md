@@ -4,10 +4,7 @@ tags: [bitcoin,chain]
 title: "BTC 笔记"
 ---
 
-@(coin)
-
 # BTC 笔记
-[TOC]
 ## 序
 主要脉络为[精通比特币(第二版)](https://github.com/bitcoinbook/bitcoinbook/blob/develop/ix.html) 以 [bitoin源码](https://github.com/bitcoin/bitcoin)  
 ##  比特币原理

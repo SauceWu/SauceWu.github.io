@@ -4,8 +4,7 @@ tags: ["service","bandwagon","nginx","docker"]
 title: "从零建站（基于Ubuntu 16.04）"
 ---
 
-# 从零建站（基于Ubuntu 16.04）
-[TOC]
+# 从零建站（基于 Ubuntu 16.04）
 
 
 ## 初始化

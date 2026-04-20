@@ -4,10 +4,6 @@ tags: [android,fragment]
 title: "Fragment 踩坑实录"
 ---
 
-
-
-@(四大组件)
-
 # Fragment 踩坑实录
 ### 不要轻易使用commitNowAllowingStateLoss
 在很多情况下使用不正确使用Fragment 会导致 java.lang.IllegalStateException 网上很多推荐commitNowAllowingStateLoss 来治标

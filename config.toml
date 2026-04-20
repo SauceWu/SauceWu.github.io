@@ -3,22 +3,28 @@ languageCode = "zh"
 DefaultContentLanguage = "zh"
 title = "Website of SauceWu "
 theme = "anatole"
-summarylength = 10
+summarylength = 25
 enableEmoji = true
 
 # Enable Disqus
 #disqusShortname = ""
 
-# Google Analytics
-googleAnalytics = "UA-166235531-1"
+# Google Analytics（UA 已停服，换 GA4 后填 G-XXXXXXXX）
+# googleAnalytics = "UA-166235531-1"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
 
 [params]
 title = "Sauce Wu Blog"
 author = "Sauce Wu"
 profilePicture = "images/profile.jpeg"
-keywords = ""
+description = "Android / Flutter / Web3"
+keywords = "android,flutter,web3,blockchain"
 favicon = "favicons/"
-customCss = []
+customCss = ["css/custom.css"]
 
 ## Math settings
 [params.math]

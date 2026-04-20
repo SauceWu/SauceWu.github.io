@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/stevensteven/workplace/blog/blog submodule status)",
+      "Bash(npx skills *)",
+      "Bash(python3 ~/.claude/skills/ui-ux-pro-max/scripts/search.py \"personal tech blog developer android flutter web3 minimal modern\" --design-system -p \"SauceWu Blog\")",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ]
+  }
+}
