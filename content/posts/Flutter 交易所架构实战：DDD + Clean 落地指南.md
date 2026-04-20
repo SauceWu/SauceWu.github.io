@@ -152,20 +152,7 @@ Data 层在外面实现接口并注入。
 
 ---
 
-## 六、怎么增量迁移（不是推倒重来）
-
-如果你项目已经很大，不要全量重构，按下面顺序迁移：
-
-1. 新功能先按 `DDD + Clean` 落
-2. 高风险链路优先抽（下单、撤单、资金变更）
-3. 旧页面逐步替换成 UseCase 调用
-4. 最后再清理历史耦合代码
-
-这套做法的好处是：业务不停、风险可控、每周都能看到结构改善。
-
----
-
-## 七、跨上下文场景怎么编排
+## 六、跨上下文场景怎么编排
 
 实际做下来最绕的是这种场景：`Trading` 下单时，需要引用 `Wallet` 的余额能力和 `Market` 的行情能力。
 
@@ -234,7 +221,235 @@ Presentation (TradePage)
 
 ---
 
+## 八、Domain Entity 不是 DTO：以订单状态机为例
+
+很多项目里 `OrderEntity` 只是一堆字段，本质还是 DTO 换了个名字。真正的领域对象要**有行为，能守规则**。
+
+```dart
+class OrderEntity {
+  final String orderId;
+  final OrderStatus status;
+  final Price price;
+  final Quantity quantity;
+  final Quantity filledQuantity;
+
+  // 状态转换：只有合法转换才能发生
+  OrderEntity fill(Quantity qty) {
+    assert(status == OrderStatus.open || status == OrderStatus.partiallyFilled);
+    final newFilled = filledQuantity + qty;
+    final newStatus = newFilled >= quantity
+        ? OrderStatus.filled
+        : OrderStatus.partiallyFilled;
+    return copyWith(filledQuantity: newFilled, status: newStatus);
+  }
+
+  OrderEntity cancel() {
+    if (status == OrderStatus.filled) {
+      throw DomainException('已成交订单不能撤销');
+    }
+    return copyWith(status: OrderStatus.canceled);
+  }
+
+  // 只读计算属性，不存储
+  Quantity get remainingQuantity => quantity - filledQuantity;
+  double get fillRate => filledQuantity.value / quantity.value;
+}
+```
+
+`fill()` 和 `cancel()` 把状态转换的**合法性检查**放进实体，UseCase 不需要再重复这些判断。这就是”领域层守规则”的字面意思。
+
+---
+
+## 九、Value Object 承载精度规则
+
+价格精度和数量精度是交易所里极高频的业务规则，如果散落在 UI 层或 UseCase 里，几乎必然会出现遗漏和不一致。
+
+```dart
+class Price {
+  final BigDecimal value;
+  final int tickSize; // 最小价格步长的小数位
+
+  Price(this.value, {required this.tickSize}) {
+    // 构造时就校验，不合法的 Price 根本不存在
+    if (!_isAlignedToTick(value, tickSize)) {
+      throw DomainException('价格 $value 不符合步长精度 $tickSize');
+    }
+  }
+
+  bool _isAlignedToTick(BigDecimal v, int tick) {
+    final scale = BigDecimal.fromInt(10).pow(tick);
+    return (v * scale).remainder(BigDecimal.one) == BigDecimal.zero;
+  }
+
+  Price operator +(Price other) => Price(value + other.value, tickSize: tickSize);
+}
+
+class Quantity {
+  final BigDecimal value;
+  final BigDecimal minLot;  // 最小下单量
+  final BigDecimal stepSize; // 数量步长
+
+  Quantity(this.value, {required this.minLot, required this.stepSize}) {
+    if (value < minLot) throw DomainException('数量低于最小下单量');
+    if (!_isAlignedToStep(value, stepSize)) throw DomainException('数量不符合步长');
+  }
+}
+```
+
+`Price` 和 `Quantity` 是值对象：构造时即校验，非法值根本无法创建。`RiskCheckService` 里就不用再写一遍这些规则了。
+
+---
+
+## 十、乐观更新（Optimistic Update）
+
+用户点击”买入”后，等服务端响应再更新 UI，体验很差——尤其是网络延迟高的时候。乐观更新的做法是先假设成功，服务端失败再回滚。
+
+```dart
+class PlaceOrderUseCase {
+  Future<Result<OrderEntity>> execute(PlaceOrderCommand command) async {
+    // 1. 先在本地创建一个 pending 状态的订单
+    final optimisticOrder = OrderEntity.pending(
+      clientOrderId: command.clientOrderId,
+      price: command.price,
+      quantity: command.quantity,
+    );
+
+    // 2. 立刻推给 UI
+    _orderStreamController.add(optimisticOrder);
+
+    try {
+      // 3. 发请求
+      final confirmed = await _repo.placeOrder(command);
+      // 4. 用服务端返回的真实状态替换 pending
+      _orderStreamController.add(confirmed);
+      return Result.success(confirmed);
+    } catch (e) {
+      // 5. 失败：移除 pending 订单，回滚 UI
+      _orderStreamController.add(optimisticOrder.copyWith(
+        status: OrderStatus.failed,
+        errorMessage: e.toString(),
+      ));
+      return Result.failure(e);
+    }
+  }
+}
+```
+
+关键设计：
+- `clientOrderId` 由客户端生成（UUID），不依赖服务端 ID，乐观状态下就有唯一标识
+- 服务端确认后用真实 orderId 替换，前端做 id 对齐
+- 失败时明确标记为 `failed`，不要静默消失
+
+---
+
+## 十一、并发下单保护
+
+用户快速双击”买入”，或者网络抖动导致重试，很容易触发重复下单。这个保护要在 Application 层做，不能靠 UI 的按钮 disabled——按钮状态在竞态下不可靠。
+
+```dart
+class PlaceOrderUseCase {
+  final _inFlight = <String, Future<Result<OrderEntity>>>{};
+
+  Future<Result<OrderEntity>> execute(PlaceOrderCommand command) {
+    final key = '${command.symbol}-${command.clientOrderId}';
+
+    // 如果同一笔请求已经在飞，直接返回同一个 Future
+    if (_inFlight.containsKey(key)) {
+      return _inFlight[key]!;
+    }
+
+    final future = _doPlaceOrder(command).whenComplete(() {
+      _inFlight.remove(key);
+    });
+
+    _inFlight[key] = future;
+    return future;
+  }
+}
+```
+
+`clientOrderId` 由调用方在命令里生成，同一笔命令重复调用 UseCase，只会执行一次网络请求，后续调用返回同一个 Future。
+
+---
+
+## 十二、错误分层：Domain Error vs Infrastructure Error
+
+错误处理是最容易乱的地方。常见反模式是把 `DioException` 直接抛到 UI，然后 UI 里 catch 一堆不同类型的异常写不同提示。
+
+正确的做法是在层边界做转换：
+
+```dart
+// Domain 层只有业务错误
+sealed class DomainError {
+  const DomainError();
+}
+class InsufficientBalance extends DomainError {
+  final double required;
+  final double available;
+}
+class PricePrecisionError extends DomainError {
+  final String detail;
+}
+class OrderAlreadyCanceled extends DomainError {}
+
+// Data 层捕获基础设施错误，映射成 Domain Error 或 AppError
+class TradingRepositoryImpl implements TradingRepository {
+  @override
+  Future<OrderEntity> placeOrder(PlaceOrderCommand command) async {
+    try {
+      final response = await _api.placeOrder(command.toDto());
+      return _mapper.toDomain(response);
+    } on DioException catch (e) {
+      // HTTP 业务错误 -> Domain Error
+      if (e.response?.statusCode == 400) {
+        final code = e.response?.data['code'];
+        throw _mapApiErrorToDomain(code, e.response?.data);
+      }
+      // 网络错误 -> AppError（基础设施层的错误）
+      throw NetworkError(message: e.message);
+    }
+  }
+
+  DomainError _mapApiErrorToDomain(String code, Map? data) => switch (code) {
+    'INSUFFICIENT_BALANCE' => InsufficientBalance(
+        required: data?['required'] ?? 0,
+        available: data?['available'] ?? 0,
+      ),
+    'PRICE_PRECISION_ERROR' => PricePrecisionError(detail: data?['message'] ?? ''),
+    _ => UnknownDomainError(code: code),
+  };
+}
+```
+
+UI 只需要处理 `DomainError` 和 `AppError` 两种，不用知道底层用的是 Dio 还是 http。
+
+---
+
+## 十三、怎么增量迁移（不是推倒重来）
+
+如果你项目已经很大，不要全量重构，按下面顺序迁移：
+
+1. 新功能先按 `DDD + Clean` 落
+2. 高风险链路优先抽（下单、撤单、资金变更）
+3. 旧页面逐步替换成 UseCase 调用
+4. 最后再清理历史耦合代码
+
+这套做法的好处是：业务不停、风险可控、每周都能看到结构改善。
+
+---
+
 ## 总结
 
-在交易所场景里，`DDD + Clean` 不是为了“显得高级”，而是为了让系统在复杂规则和高频变更下还能稳定进化。  
+在交易所场景里，`DDD + Clean` 不是为了”显得高级”，而是为了让系统在复杂规则和高频变更下还能稳定进化。
+
+真正落地的关键不只是目录结构，而是这几点：
+
+| 问题 | 解决方案 |
+|------|---------|
+| 业务规则散落 | Entity 有行为，Value Object 构造即校验 |
+| UI 体验差 | Optimistic Update + pending 状态 |
+| 重复下单 | UseCase 层 in-flight 去重 |
+| 错误处理混乱 | 层边界做错误转换，UI 只看 DomainError |
+| 跨上下文耦合 | Application 层编排，Domain 接口隔离 |
+
 先把边界画清，再把流程做薄，架构才会真正服务业务，而不是拖慢业务。
