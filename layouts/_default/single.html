@@ -11,6 +11,9 @@
       {{ end }}
     </div>
     {{ .Content }}
+    {{- if (eq .Site.Params.mermaid.enable true) -}}
+      {{- partial "mermaid.html" . -}}
+    {{- end -}}
   </div>
 </div>
 {{ end }}
