@@ -1,5 +1,5 @@
 ---
-date: 2025-04-7T13:15:00+09:00
+date: 2025-04-07T13:15:00+09:00
 tags: ["flutter", "kline", "gesture", "animation", "performance"]
 title: "Flutter K线系统拆解（四）：交互体系与性能工程"
 ---
