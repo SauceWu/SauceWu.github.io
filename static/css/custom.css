@@ -1,0 +1,152 @@
+/* Mermaid diagram readability */
+.mermaid {
+  font-size: 18px;
+}
+
+.mermaid .label,
+.mermaid .nodeLabel,
+.mermaid .edgeLabel,
+.mermaid .messageText,
+.mermaid .loopText,
+.mermaid .noteText {
+  font-size: 18px !important;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-zoom-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 10px 0 14px;
+}
+
+.mermaid-zoom-icon-btn {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(127, 127, 127, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #23272f;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  opacity: 0.78;
+  transition: opacity 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
+}
+
+/* Hide legacy button style from previous script versions */
+.mermaid-zoom-btn {
+  display: none !important;
+}
+
+.mermaid-zoom-icon-btn:hover {
+  opacity: 1;
+  transform: scale(1.04);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.theme--dark .mermaid-zoom-icon-btn {
+  background: rgba(31, 36, 47, 0.76);
+  color: #f0f3f9;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.mermaid-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+}
+
+.mermaid-modal.is-open {
+  display: block;
+}
+
+.mermaid-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.56);
+}
+
+.mermaid-modal__panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(94vw, 1200px);
+  max-height: 88vh;
+  overflow: auto;
+  border-radius: 12px;
+  background: #fff;
+  padding: 18px 18px 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.theme--dark .mermaid-modal__panel {
+  background: #1f242f;
+}
+
+.mermaid-modal__close {
+  position: sticky;
+  top: 0;
+  float: right;
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.mermaid-modal__content {
+  clear: both;
+  overflow: auto;
+}
+
+.mermaid-modal__content .mermaid,
+.mermaid-modal__content svg {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 768px) {
+  .mermaid {
+    font-size: 16px;
+  }
+
+  .mermaid .label,
+  .mermaid .nodeLabel,
+  .mermaid .edgeLabel,
+  .mermaid .messageText,
+  .mermaid .loopText,
+  .mermaid .noteText {
+    font-size: 16px !important;
+  }
+
+  .mermaid-modal__panel {
+    width: 96vw;
+    max-height: 92vh;
+    padding: 14px 12px 10px;
+  }
+
+  .mermaid-zoom-icon-btn {
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+  }
+}
